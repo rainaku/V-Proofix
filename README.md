@@ -1,70 +1,71 @@
-# V-Proofix: Công cụ Sửa Lỗi Chính Tả & Ngữ Pháp Tích Hợp AI
+# V-Proofix: AI-Powered Grammar & Style Assistant
 
 <p align="center">
   <img src="Resources/logo.png" width="128" alt="V-Proofix Logo" />
 </p>
 
-V-Proofix là một ứng dụng desktop chuyên nghiệp dành cho hệ điều hành Windows, được thiết kế để tối ưu hóa quy trình hiệu đính văn bản. Thông qua việc tích hợp các mô hình ngôn ngữ lớn (LLM) tiên tiến từ Google Gemini, ứng dụng cung cấp khả năng sửa lỗi ngữ pháp, chính tả và tinh chỉnh văn phong một cách tức thời ngay trên các trình soạn thảo văn bản phổ biến.
+V-Proofix is a professional Windows desktop application designed to streamline your writing and proofreading workflow. By leveraging advanced Large Language Models (LLMs) from Google Gemini, the app provides instant grammar correction, spelling fixes, and stylistic enhancements directly within any text editor or browser.
 
 ---
 
-## Tính Năng Chính
+## 🚀 Key Features
 
-*   **Hiệu Đính AI Đa Ngôn Ngữ:** Sử dụng sức mạnh của Google Gemini (mặc định Gemini 2.0 Flash) để phân tích ngữ cảnh và đưa ra các đề xuất sửa đổi chính xác.
-*   **Tích Hợp Hệ Thống Sâu:** Hoạt động thông qua phím tắt toàn hệ thống, cho phép xử lý văn bản trực tiếp trong bất kỳ ứng dụng nào (Word, Browser, IDE, Slack, v.v.) mà không cần sao chép thủ công.
-*   **Giao Diện Liquid Glass:** Thiết kế theo phong cách hiện đại với hiệu ứng Glassmorphism, mang lại trải nghiệm thẩm mỹ cao và không làm gián đoạn không gian làm việc.
-*   **Cơ Chế Kiểm Soát Preview:** Cung cấp cửa sổ so sánh (Diff) trực quan giữa văn bản gốc và văn bản đã sửa trước khi quyết định áp dụng.
-*   **Bảo Mật Dữ Liệu:** API Key được mã hóa bằng DPAPI (Windows Data Protection API), đảm bảo thông tin cá nhân chỉ được lưu trữ và truy cập cục bộ.
-*   **Quản Lý Lịch Sử:** Lưu trữ cục bộ các phiên hiệu đính để người dùng có thể đối chiếu và tra cứu lại khi cần thiết.
+*   **Multilingual AI Proofreading:** Powered by Google Gemini (defaulting to Gemini 2.0 Flash) to analyze context and deliver precise linguistic improvements across multiple languages.
+*   **Seamless System Integration:** Operates via system-wide hotkeys, allowing you to process text in any application (Word, Browser, IDE, Slack, etc.) without manual copy-pasting.
+*   **Liquid Glass Interface:** A modern UI featuring high-end Glassmorphism effects, ensuring a premium aesthetic that blends beautifully with your workspace.
+*   **Smart Preview System:** Provides an intuitive side-by-side comparison (Diff) between original and corrected text before applying changes.
+*   **Enterprise-Grade Security:** API keys are encrypted using the Windows Data Protection API (DPAPI), ensuring your sensitive data remains local and secure.
+*   **History Tracking:** Locally stores previous proofreading sessions for easy reference and retrieval.
 
 ---
 
-## Cấu Hình Phím Tắt Hệ Thống
+## ⌨️ System Hotkeys
 
-Ứng dụng hỗ trợ hai chế độ hoạt động chính thông qua các tổ hợp phím có thể tùy chỉnh:
+V-Proofix supports two primary operation modes with customizable shortcuts:
 
-| Chế độ | Phím tắt mặc định | Mô tả |
+| Mode | Default Hotkey | Description |
 | :--- | :--- | :--- |
-| **Fix Now** | `Ctrl + Alt + F` | Tự động sửa lỗi và ghi đè trực tiếp vào vùng văn bản đang chọn. |
-| **Preview Fix** | `Ctrl + Alt + P` | Hiển thị cửa sổ so sánh song song để người dùng kiểm tra trước khi xác nhận thay đổi. |
+| **Fix Now** | `Ctrl + Alt + F` | Automatically corrects errors and overwrites the selected text directly. |
+| **Preview Fix** | `Ctrl + Alt + P` | Opens a side-by-side comparison window for manual verification before applying. |
 
 ---
 
-## Yêu Cầu Hệ Thống & Cài Đặt
+## 🛠 Prerequisites & Installation
 
-### Yêu Cầu
-*   Hệ điều hành: Windows 10/11 (64-bit).
-*   Môi trường: .NET 8.0 Runtime.
-*   Kết nối: Yêu cầu kết nối Internet để gọi API từ Google Gemini.
+### System Requirements
+*   **OS:** Windows 10/11 (64-bit).
+*   **Runtime:** .NET 8.0 Desktop Runtime.
+*   **Connection:** Active Internet connection for Google Gemini API access.
 
-### Hướng Dẫn Cài Đặt
-1.  Tải bản phát hành mới nhất từ mục [Releases](https://github.com/rainaku/V-Proofix/releases).
-2.  Giải nén và thực thi `VProofix.exe`.
-3.  Truy cập **Settings** từ khay hệ thống (System Tray).
-4.  Cấu hình **Gemini API Key** (có thể khởi tạo miễn phí tại [Google AI Studio](https://aistudio.google.com/)).
+### Getting Started
+1.  Download the latest release from the [Releases](https://github.com/rainaku/V-Proofix/releases) page.
+2.  Extract the package and run `VProofix.exe`.
+3.  Access **Settings** from the System Tray icon.
+4.  Configure your **Gemini API Key** (Get a free one at [Google AI Studio](https://aistudio.google.com/)).
 
 ---
 
-## Kiến Trúc Kỹ Thuật
+## 🏗 Technical Architecture
 
-V-Proofix được xây dựng trên nền tảng công nghệ hiện đại, đảm bảo sự ổn định và hiệu suất:
+V-Proofix is built with a focus on stability, performance, and modern standards:
 
-*   **Ngôn ngữ:** C# / XAML (WPF).
+*   **Language:** C# / XAML (WPF).
 *   **Framework:** .NET 8.0.
-*   **AI Integration:** Google Gemini API qua giao thức REST.
-*   **Automation:** Sử dụng Windows UI Automation để tương tác với các ứng dụng bên thứ ba.
-*   **Security:** System.Security.Cryptography.ProtectedData để bảo mật thông tin nhạy cảm.
+*   **AI Integration:** Google Gemini API via REST.
+*   **Automation:** Windows UI Automation & Win32 API for seamless inter-process interaction.
+*   **Security:** DPAPI (System.Security.Cryptography.ProtectedData) for local credential encryption.
 
 ---
 
-## Giấy Phép (License)
+## 📄 License
 
-Dự án được phân phối dưới giấy phép **MIT License**. Mọi chi tiết vui lòng tham khảo file `LICENSE` trong thư mục gốc.
+This project is licensed under the **MIT License**. For more details, please see the `LICENSE` file in the root directory.
 
 ---
 
-## Liên Hệ & Đóng Góp
+## 🤝 Contact & Contribution
 
-Chúng tôi luôn hoan nghênh các đóng góp từ cộng đồng nhằm cải thiện chất lượng sản phẩm.
-*   Báo lỗi hoặc yêu cầu tính năng: [Issues](https://github.com/rainaku/V-Proofix/issues).
-*   Tác giả: **rainaku**
+Contributions are welcome to help improve the tool!
+*   **Bug Reports & Feature Requests:** [GitHub Issues](https://github.com/rainaku/V-Proofix/issues).
+*   **Author:** **rainaku**
+
