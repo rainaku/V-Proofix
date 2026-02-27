@@ -1,0 +1,14 @@
+namespace VProofix.Models
+{
+    public class AppSettings
+    {
+        public string GeminiApiKey { get; set; } = string.Empty;
+        public string ModelName { get; set; } = "gemini-2.0-flash";
+        public string TargetLanguage { get; set; } = "English";
+        public string FixHotkey { get; set; } = "Ctrl+Alt+F";
+        public string PreviewHotkey { get; set; } = "Ctrl+Alt+P";
+        public bool PrivacyMode { get; set; } = true;
+        public bool ShowPreviewWindow { get; set; } = false;
+        public string PromptFormat { get; set; } = "Fix grammar and spelling mistakes. ONLY output the corrected text. Do NOT explain. Preserve the original formatting (like markdown and newlines).";
+    }
+}
