@@ -8,7 +8,7 @@ V-Proofix is a professional Windows desktop application designed to streamline y
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 *   **Multilingual AI Proofreading:** Powered by Google Gemini (defaulting to Gemini 2.0 Flash) to analyze context and deliver precise linguistic improvements across multiple languages.
 *   **Seamless System Integration:** Operates via system-wide hotkeys, allowing you to process text in any application (Word, Browser, IDE, Slack, etc.) without manual copy-pasting.
@@ -19,7 +19,7 @@ V-Proofix is a professional Windows desktop application designed to streamline y
 
 ---
 
-## ⌨️ System Hotkeys
+## System Hotkeys
 
 V-Proofix supports two primary operation modes with customizable shortcuts:
 
@@ -30,7 +30,7 @@ V-Proofix supports two primary operation modes with customizable shortcuts:
 
 ---
 
-## 🛠 Prerequisites & Installation
+## Prerequisites & Installation
 
 ### System Requirements
 *   **OS:** Windows 10/11 (64-bit).
@@ -45,7 +45,7 @@ V-Proofix supports two primary operation modes with customizable shortcuts:
 
 ---
 
-## 🏗 Technical Architecture
+## Technical Architecture
 
 V-Proofix is built with a focus on stability, performance, and modern standards:
 
@@ -57,13 +57,13 @@ V-Proofix is built with a focus on stability, performance, and modern standards:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License**. For more details, please see the `LICENSE` file in the root directory.
 
 ---
 
-## 🤝 Contact & Contribution
+## Contact & Contribution
 
 Contributions are welcome to help improve the tool!
 *   **Bug Reports & Feature Requests:** [GitHub Issues](https://github.com/rainaku/V-Proofix/issues).
