@@ -1,5 +1,9 @@
 # V-Proofix: Công cụ Sửa Lỗi Chính Tả & Ngữ Pháp Tích Hợp AI
 
+<p align="center">
+  <img src="Resources/logo.png" width="128" alt="V-Proofix Logo" />
+</p>
+
 V-Proofix là một ứng dụng desktop chuyên nghiệp dành cho hệ điều hành Windows, được thiết kế để tối ưu hóa quy trình hiệu đính văn bản. Thông qua việc tích hợp các mô hình ngôn ngữ lớn (LLM) tiên tiến từ Google Gemini, ứng dụng cung cấp khả năng sửa lỗi ngữ pháp, chính tả và tinh chỉnh văn phong một cách tức thời ngay trên các trình soạn thảo văn bản phổ biến.
 
 ---
