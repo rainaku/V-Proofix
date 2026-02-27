@@ -15,9 +15,9 @@ namespace VProofix.Services
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
         private IntPtr _hWnd;
-        private HwndSource _source;
+        private HwndSource? _source;
         private int _currentId = 9000;
-        private Dictionary<int, Action> _hotkeys = new Dictionary<int, Action>();
+        private readonly Dictionary<int, Action> _hotkeys = new Dictionary<int, Action>();
 
         public void Initialize()
         {
@@ -67,7 +67,7 @@ namespace VProofix.Services
             if (msg == WM_HOTKEY)
             {
                 int id = wParam.ToInt32();
-                if (_hotkeys.TryGetValue(id, out Action action))
+                if (_hotkeys.TryGetValue(id, out Action? action))
                 {
                     action?.Invoke();
                     handled = true;

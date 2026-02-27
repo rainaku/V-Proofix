@@ -67,22 +67,21 @@ namespace VProofix.Services
                     
                     if (!response.IsSuccessStatusCode)
                     {
-                        string errorHtml = await response.Content.ReadAsStringAsync();
+                        string errorHtml = await response.Content.ReadAsStringAsync(cancellationToken);
                         throw new Exception($"API Error ({response.StatusCode}): {errorHtml}");
                     }
 
-                    string responseString = await response.Content.ReadAsStringAsync();
+                    string responseString = await response.Content.ReadAsStringAsync(cancellationToken);
                     using (JsonDocument doc = JsonDocument.Parse(responseString))
                     {
                         var root = doc.RootElement;
-                        var candidates = root.GetProperty("candidates");
-                        if (candidates.GetArrayLength() > 0)
+                        if (root.TryGetProperty("candidates", out JsonElement candidates) && candidates.GetArrayLength() > 0)
                         {
                             var parts = candidates[0].GetProperty("content").GetProperty("parts");
                             if (parts.GetArrayLength() > 0)
                             {
-                                string fixedText = parts[0].GetProperty("text").GetString();
-                                return fixedText.Trim();
+                                string? fixedText = parts[0].GetProperty("text").GetString();
+                                return fixedText?.Trim() ?? throw new Exception("API returned null text.");
                             }
                         }
                     }

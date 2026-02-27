@@ -6,8 +6,8 @@ namespace VProofix.Services
 {
     public class HistoryItem
     {
-        public string OriginalText { get; set; }
-        public string FixedText { get; set; }
+        public string OriginalText { get; set; } = string.Empty;
+        public string FixedText { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
     }
 
@@ -39,7 +39,7 @@ namespace VProofix.Services
             }
         }
 
-        public HistoryItem GetLastEntry()
+        public HistoryItem? GetLastEntry()
         {
             return _history.FirstOrDefault();
         }

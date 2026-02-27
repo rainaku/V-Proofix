@@ -7,22 +7,37 @@ using VProofix.Services;
 using VProofix.Views;
 using VProofix.ViewModels;
 using System.Windows.Input;
+using System.Net.Http;
+
 
 namespace VProofix
 {
     public partial class App : Application
     {
-        public ICommand OpenSettingsCommand { get; private set; }
-        private System.Windows.Forms.NotifyIcon _trayIcon;
-        private SettingsService _settingsService;
-        private HotkeyService _hotkeyService;
-        private ClipboardService _clipboardService;
-        private UIAutomationService _uiAutoService;
-        private GeminiService _geminiService;
-        private HistoryService _historyService;
+        private static Mutex? _mutex;
+        private const string AppGuid = "62333969-0220-4e7b-8b92-5f8aa9b9ae8f"; // Matching conversation ID for uniqueness
+
+        public ICommand OpenSettingsCommand { get; private set; } = null!;
+        private System.Windows.Forms.NotifyIcon _trayIcon = null!;
+        private SettingsService _settingsService = null!;
+        private HotkeyService _hotkeyService = null!;
+        private ClipboardService _clipboardService = null!;
+        private UIAutomationService _uiAutoService = null!;
+        private GeminiService _geminiService = null!;
+        private HistoryService _historyService = null!;
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            _mutex = new Mutex(true, "Global\\" + AppGuid, out bool createdNew);
+
+            if (!createdNew)
+            {
+                // App is already running
+                MessageBox.Show("V-Proofix is already running in the system tray.", "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
+                Application.Current.Shutdown();
+                return;
+            }
+
             base.OnStartup(e);
 
             // Initialize Services
@@ -40,11 +55,11 @@ namespace VProofix
             RegisterHotkeys();
 
             // Set up commands
-            OpenSettingsCommand = new RelayCommand(o => Settings_Click(null, null));
+            OpenSettingsCommand = new RelayCommand(o => Settings_Click(new object(), new RoutedEventArgs()));
 
             // Setup WinForms Tray Icon (Native Win32 implementation for maximum standard compatibility)
             _trayIcon = new System.Windows.Forms.NotifyIcon();
-            _trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            _trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? "VProofix.exe");
             _trayIcon.Text = "V-Proofix - Grammar Fixer";
             _trayIcon.Visible = true;
 
@@ -53,15 +68,15 @@ namespace VProofix
             {
                 if (args.Button == System.Windows.Forms.MouseButtons.Left)
                 {
-                    Settings_Click(null, null);
+                    Settings_Click(new object(), new RoutedEventArgs());
                 }
             };
 
             var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-            contextMenu.Items.Add("Fix Now (Simulate)", null, (s, e) => FixNow_Click(null, null));
+            contextMenu.Items.Add("Fix Now (Simulate)", null, (s, e) => FixNow_Click(new object(), new RoutedEventArgs()));
             contextMenu.Items.Add("-");
-            contextMenu.Items.Add("Settings", null, (s, e) => Settings_Click(null, null));
-            contextMenu.Items.Add("Exit", null, (s, e) => Exit_Click(null, null));
+            contextMenu.Items.Add("Settings", null, (s, e) => Settings_Click(new object(), new RoutedEventArgs()));
+            contextMenu.Items.Add("Exit", null, (s, e) => Exit_Click(new object(), new RoutedEventArgs()));
 
             _trayIcon.ContextMenuStrip = contextMenu;
         }
@@ -97,7 +112,7 @@ namespace VProofix
         }
 
         private bool _isProcessing = false;
-        private IndicatorWindow _indicatorWin;
+        private IndicatorWindow? _indicatorWin;
 
         private async Task ExecuteFixAsync(bool forcePreview)
         {
@@ -127,8 +142,8 @@ namespace VProofix
 
                 if (string.IsNullOrWhiteSpace(textToFix))
                 {
-                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("No text selected"));
-                    await Task.Delay(1000);
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Chưa bôi đen đoạn văn bản cần sửa"));
+                    await Task.Delay(2000);
                     return;
                 }
 
@@ -153,10 +168,33 @@ namespace VProofix
                     await Task.Delay(500);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Kết nối bị quá hạn (Timeout)"));
+                await Task.Delay(2000);
+            }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Error!"));
-                await Task.Delay(1500);
+                string errorMsg = "Lỗi hệ thống!";
+                
+                string lowerMsg = ex.Message.ToLower();
+                if (lowerMsg.Contains("api key is missing"))
+                    errorMsg = "Lỗi: Chưa thiết lập API Key";
+                else if (lowerMsg.Contains("401") || lowerMsg.Contains("unauthorized"))
+                    errorMsg = "Lỗi: API Key không hợp lệ";
+                else if (lowerMsg.Contains("429") || lowerMsg.Contains("too many requests"))
+                    errorMsg = "Lỗi: Đã hết lượt dùng (Rate Limit)";
+                else if (lowerMsg.Contains("403"))
+                    errorMsg = "Lỗi: Truy cập bị từ chối (403)";
+                else if (lowerMsg.Contains("network") || lowerMsg.Contains("dns") || lowerMsg.Contains("socket"))
+                    errorMsg = "Lỗi: Không có kết nối mạng";
+                else if (ex is HttpRequestException)
+                    errorMsg = "Lỗi: Không thể kết nối tới máy chủ";
+                else
+                    errorMsg = $"Lỗi: {ex.Message.Split('\n')[0]}"; // Just first line to keep it clean
+
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(errorMsg));
+                await Task.Delay(2500);
             }
             finally
             {
@@ -222,6 +260,8 @@ namespace VProofix
                 _trayIcon.Dispose();
             }
             _hotkeyService?.Dispose();
+            _mutex?.ReleaseMutex();
+            _mutex?.Dispose();
             Application.Current.Shutdown();
         }
     }

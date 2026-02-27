@@ -29,45 +29,53 @@ namespace VProofix.Views
             public int AnimationId;
         }
 
+        [DllImport("gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        private static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
         public IndicatorWindow()
         {
             InitializeComponent();
         }
 
+        [DllImport("dwmapi.dll")]
+        internal static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
             
+            var windowHelper = new WindowInteropHelper(this);
+            var handle = windowHelper.Handle;
+
             try
             {
-                // Enable Windows generic background blur for this layered window
-                var windowHelper = new WindowInteropHelper(this);
-                var accent = new AccentPolicy { AccentState = 3 }; // 3 = ACCENT_ENABLE_BLURBEHIND
+                // Set corner preference for Win 11 handle - still good for the window frame itself if any
+                int cornerPreference = 2; // DWMWCP_ROUND
+                DwmSetWindowAttribute(handle, 33, ref cornerPreference, sizeof(int));
 
-                var accentStructSize = Marshal.SizeOf(accent);
-                var accentPtr = Marshal.AllocHGlobal(accentStructSize);
-                Marshal.StructureToPtr(accent, accentPtr, false);
-
-                var data = new WindowCompositionAttributeData
-                {
-                    Attribute = 19, // WCA_ACCENT_POLICY
-                    SizeOfData = accentStructSize,
-                    Data = accentPtr
-                };
-
-                SetWindowCompositionAttribute(windowHelper.Handle, ref data);
-                Marshal.FreeHGlobal(accentPtr);
+                // We are not using SetWindowRgn or AccentPolicy anymore
+                // to allow WPF's DropShadowEffect to render naturally outside the border.
+                // The window is already AllowsTransparency=True and Background=Transparent.
             }
             catch { /* Ignore if OS doesn't support */ }
         }
 
         public void SetStatus(string text)
         {
-            if (text == "Fixed!" || text == "Đã sửa xong!")
+            if (text == "Fixed!" || text == "Đã sửa xong!" || text == "Đã hoàn thành!")
             {
                 txtStatus.Text = "Đã hoàn thành!";
                 var successAnim = (Storyboard)FindResource("SuccessAnimation");
                 successAnim.Begin();
+            }
+            else if (text.StartsWith("Lỗi") || text.StartsWith("Chưa"))
+            {
+                txtStatus.Text = text;
+                var errorAnim = (Storyboard)FindResource("ErrorAnimation");
+                errorAnim.Begin();
             }
             else
             {

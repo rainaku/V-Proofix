@@ -9,7 +9,7 @@ namespace VProofix.Services
     public class SettingsService
     {
         private static readonly string SettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-        public AppSettings CurrentSettings { get; private set; }
+        public AppSettings CurrentSettings { get; private set; } = new AppSettings();
 
         public SettingsService()
         {
