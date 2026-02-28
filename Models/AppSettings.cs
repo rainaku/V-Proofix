@@ -6,6 +6,7 @@ namespace VProofix.Models
     {
         public string GeminiApiKey { get; set; } = string.Empty;
         public string ModelName { get; set; } = "gemma-3-27b-it";
+        public string AppLanguage { get; set; } = "English";
         public string TargetLanguage { get; set; } = "English";
         public string FixHotkey { get; set; } = "Ctrl+Alt+F";
         public string PreviewHotkey { get; set; } = "Ctrl+Alt+P";

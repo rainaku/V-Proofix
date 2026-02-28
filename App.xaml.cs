@@ -6,6 +6,7 @@ using System.Windows.Interop;
 using VProofix.Services;
 using VProofix.Views;
 using VProofix.ViewModels;
+using VProofix.Helpers;
 using System.Windows.Input;
 using System.Net.Http;
 
@@ -42,6 +43,7 @@ namespace VProofix
 
             // Initialize Services
             _settingsService = new SettingsService();
+            L.CurrentLanguage = _settingsService.CurrentSettings.AppLanguage;
             _clipboardService = new ClipboardService();
             _uiAutoService = new UIAutomationService();
             _geminiService = new GeminiService(_settingsService);
@@ -142,7 +144,7 @@ namespace VProofix
 
                 if (string.IsNullOrWhiteSpace(textToFix))
                 {
-                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Chưa bôi đen đoạn văn bản cần sửa", ""));
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.NoTextSelected, ""));
                     await Task.Delay(2000);
                     return;
                 }
@@ -150,7 +152,7 @@ namespace VProofix
                 int wordCount = textToFix.Split(new char[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
                 if (wordCount > 600)
                 {
-                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Văn bản quá dài", $"Tối đa 600 từ (hiện tại: {wordCount})"));
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.TextTooLong, L.MaxWords(wordCount)));
                     await Task.Delay(2500);
                     return;
                 }
@@ -185,35 +187,35 @@ namespace VProofix
                         // ReplaceSelectedTextAsync is injected, thus bypasses InputBlocker by design.
                         await _clipboardService.ReplaceSelectedTextAsync(fixedText);
                         inputBlocker.Unblock(); // Free inputs immediately after physical pasting
-                        Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Fixed!", "Đã xong"));
+                        Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.Fixed, L.Done));
                         await Task.Delay(500);
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Kết nối bị quá hạn (Timeout)", ""));
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.Timeout, ""));
                 await Task.Delay(2000);
             }
             catch (Exception ex)
             {
-                string errorMsg = "Lỗi hệ thống!";
+                string errorMsg = L.SysError;
                 
                 string lowerMsg = ex.Message.ToLower();
                 if (lowerMsg.Contains("api key is missing"))
-                    errorMsg = "Lỗi: Chưa thiết lập API Key";
+                    errorMsg = L.ErrMissingKey;
                 else if (lowerMsg.Contains("401") || lowerMsg.Contains("unauthorized"))
-                    errorMsg = "Lỗi: API Key không hợp lệ";
+                    errorMsg = L.ErrInvalidKey;
                 else if (lowerMsg.Contains("429") || lowerMsg.Contains("too many requests"))
-                    errorMsg = "Lỗi: Đã hết lượt dùng (Rate Limit)";
+                    errorMsg = L.ErrRateLimit;
                 else if (lowerMsg.Contains("403"))
-                    errorMsg = "Lỗi: Truy cập bị từ chối (403)";
+                    errorMsg = "Error 403 / Truy cập bị từ chối";
                 else if (lowerMsg.Contains("network") || lowerMsg.Contains("dns") || lowerMsg.Contains("socket"))
-                    errorMsg = "Lỗi: Không có kết nối mạng";
+                    errorMsg = "Network Error / Không có kết nối mạng";
                 else if (ex is HttpRequestException)
-                    errorMsg = "Lỗi: Không thể kết nối tới máy chủ";
+                    errorMsg = "Connection Error / Lỗi kết nối máy chủ";
                 else
-                    errorMsg = $"Lỗi: {ex.Message.Split('\n')[0]}"; // Just first line to keep it clean
+                    errorMsg = $"Error: {ex.Message.Split('\n')[0]}"; // Just first line to keep it clean
 
                 Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(errorMsg, ""));
                 await Task.Delay(2500);

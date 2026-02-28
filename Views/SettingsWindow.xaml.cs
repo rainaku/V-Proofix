@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using VProofix.Models;
 using VProofix.Services;
+using VProofix.Helpers;
 
 namespace VProofix.Views
 {
@@ -15,6 +16,22 @@ namespace VProofix.Views
             InitializeComponent();
             _settingsService = settingsService;
             LoadCurrentSettings();
+            UpdateUILanguage();
+        }
+
+        private void UpdateUILanguage()
+        {
+            this.Title = L.SettingsTitle;
+            lblAppLanguage.Text = L.UILanguage;
+            lblTargetLanguage.Text = L.TargetLanguageUI;
+            lblFixHotkey.Text = L.FixHotkey;
+            lblPreviewHotkey.Text = L.PreviewHotkey;
+            lblPromptFormat.Text = L.PromptFormatUI;
+            chkShowPreview.Content = L.CheckPreview;
+            chkPrivacyMode.Content = L.CheckPrivacy;
+            btnExit.Content = L.BtnExit;
+            btnCancel.Content = L.BtnCancel;
+            btnSave.Content = L.BtnSave;
         }
 
         private void LoadCurrentSettings()
@@ -33,6 +50,7 @@ namespace VProofix.Views
             }
             if (cmbModelName.SelectedIndex == -1) cmbModelName.Text = s.ModelName; // Fallback if no match
 
+            cmbAppLanguage.Text = s.AppLanguage;
             cmbTargetLanguage.Text = s.TargetLanguage;
             txtFixHotkey.Text = s.FixHotkey;
             txtPreviewHotkey.Text = s.PreviewHotkey;
@@ -45,6 +63,8 @@ namespace VProofix.Views
         {
             var s = _settingsService.CurrentSettings;
             s.ModelName = (cmbModelName.SelectedItem as ComboBoxItem)?.Content.ToString() ?? cmbModelName.Text;
+            s.AppLanguage = cmbAppLanguage.Text;
+            L.CurrentLanguage = s.AppLanguage;
             s.TargetLanguage = cmbTargetLanguage.Text;
             s.FixHotkey = txtFixHotkey.Text;
             s.PreviewHotkey = txtPreviewHotkey.Text;

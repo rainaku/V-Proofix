@@ -74,15 +74,15 @@ namespace VProofix.Views
 
         public void SetStatus(string text, string subText = "")
         {
-            if (text == "Fixed!" || text == "Đã sửa xong!" || text == "Đã hoàn thành!")
+            if (text == VProofix.Helpers.L.Completed || text == VProofix.Helpers.L.Fixed || text == "Fixed!" || text == "Đã sửa xong!" || text == "Đã hoàn thành!")
             {
-                txtStatus.Text = "Đã hoàn thành!";
+                txtStatus.Text = VProofix.Helpers.L.Completed;
                 txtSubStatus.Text = subText;
                 txtSubStatus.Visibility = string.IsNullOrEmpty(subText) ? Visibility.Collapsed : Visibility.Visible;
                 var successAnim = (Storyboard)FindResource("SuccessAnimation");
                 successAnim.Begin();
             }
-            else if (text.StartsWith("Lỗi") || text.StartsWith("Chưa") || text.StartsWith("Văn bản"))
+            else if (text.StartsWith("Lỗi") || text.StartsWith("Error") || text.StartsWith("Chưa") || text.StartsWith("No text") || text.StartsWith("Văn bản") || text.StartsWith("Text is"))
             {
                 txtStatus.Text = text;
                 txtSubStatus.Text = subText;

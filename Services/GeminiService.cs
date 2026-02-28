@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using VProofix.Helpers;
 
 namespace VProofix.Services
 {
@@ -93,7 +94,7 @@ namespace VProofix.Services
                 {
                     try
                     {
-                        progress?.Invoke("V-Proofix đang làm việc...", $"Đang gọi API ({GetModelDisplayName(model)})...");
+                        progress?.Invoke(L.Working, L.CallingApi(GetModelDisplayName(model)));
 
                         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                         var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
@@ -104,10 +105,10 @@ namespace VProofix.Services
                         await Task.Delay(1000, cancellationToken);
                         
                         int totalChars = originalText.Length;
-                        progress?.Invoke("V-Proofix đang làm việc...", $"Đang phân tích {totalChars} ký tự...");
+                        progress?.Invoke(L.Working, L.Analyzing(totalChars));
                         await Task.Delay(2000, cancellationToken);
 
-                        progress?.Invoke("V-Proofix đang làm việc...", $"Đang fix {totalChars} ký tự...");
+                        progress?.Invoke(L.Working, L.Fixing(totalChars));
 
                         var response = await responseTask;
 
@@ -122,7 +123,7 @@ namespace VProofix.Services
                             for (int step = 1; step <= steps; step++)
                             {
                                 int percent = (int)((double)step / steps * 100);
-                                progress?.Invoke("V-Proofix đang làm việc...", $"Đang fix {totalChars} ký tự ({percent}%)...");
+                                progress?.Invoke(L.Working, L.FixingPercent(totalChars, percent));
                                 await Task.Delay(15, cancellationToken);
                             }
 
