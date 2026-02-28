@@ -107,6 +107,9 @@
                             <Ellipse Stroke="#F0F0F0" StrokeThickness="5" />
                             <!-- Spinner Arc -->
                             <Path x:Name="SpinnerArc" Data="M 30 2 A 28 28 0 0 1 58 30" Stroke="#007AFF" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" RenderTransformOrigin="0.5,0.5">
+                                <Path.Effect>
+                                    <DropShadowEffect Color="#007AFF" BlurRadius="12" Opacity="0.75" ShadowDepth="0" Direction="0"/>
+                                </Path.Effect>
                                 <Path.RenderTransform>
                                     <RotateTransform x:Name="SpinnerTransform" Angle="0"/>
                                 </Path.RenderTransform>
@@ -130,7 +133,11 @@
                             <Grid.RenderTransform>
                                 <ScaleTransform ScaleX="0.5" ScaleY="0.5"/>
                             </Grid.RenderTransform>
-                            <Path x:Name="CheckmarkPath" Data="M 15,30 L 27,42 L 45,18" Stroke="#007AFF" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Opacity="0" />
+                            <Path x:Name="CheckmarkPath" Data="M 15,30 L 27,42 L 45,18" Stroke="#007AFF" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Opacity="0">
+                                <Path.Effect>
+                                    <DropShadowEffect Color="#007AFF" BlurRadius="12" Opacity="0.75" ShadowDepth="0" Direction="0"/>
+                                </Path.Effect>
+                            </Path>
                         </Grid>
 
                         <!-- Error Container (Initially Transparent) -->
@@ -139,14 +146,18 @@
                                 <ScaleTransform ScaleX="0.5" ScaleY="0.5"/>
                             </Grid.RenderTransform>
                             <!-- Red X Icon -->
-                            <Path Data="M 18,18 L 42,42 M 42,18 L 18,42" Stroke="#007AFF" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            <Path Data="M 18,18 L 42,42 M 42,18 L 18,42" Stroke="#007AFF" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                                <Path.Effect>
+                                    <DropShadowEffect Color="#007AFF" BlurRadius="12" Opacity="0.75" ShadowDepth="0" Direction="0"/>
+                                </Path.Effect>
+                            </Path>
                         </Grid>
                     </Grid>
                     
                     <!-- Text Description -->
                     <TextBlock x:Name="txtStatus" 
                                Text="V-Proofix đang làm việc..." 
-                               Foreground="#1A1A1A" 
+                               Foreground="#007AFF" 
                                FontWeight="Bold" 
                                FontSize="16" 
                                Margin="0,25,0,0" 
@@ -155,8 +166,22 @@
                                TextWrapping="Wrap" 
                                MaxWidth="260">
                         <TextBlock.Effect>
-                            <!-- Elegant soft shadow for text -->
-                            <DropShadowEffect Color="Black" BlurRadius="4" Opacity="0.12" ShadowDepth="1.5" Direction="270" />
+                            <!-- Blue glow for text -->
+                            <DropShadowEffect Color="#007AFF" BlurRadius="12" Opacity="0.75" ShadowDepth="0" Direction="0" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock x:Name="txtSubStatus" 
+                               Text="Khởi tạo..." 
+                               Foreground="#007AFF" 
+                               FontWeight="SemiBold"
+                               FontSize="12" 
+                               Margin="0,6,0,0" 
+                               HorizontalAlignment="Center" 
+                               TextAlignment="Center" 
+                               TextWrapping="Wrap" 
+                               MaxWidth="260">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="#007AFF" BlurRadius="10" Opacity="0.6" ShadowDepth="0" Direction="0" />
                         </TextBlock.Effect>
                     </TextBlock>
                 </StackPanel>

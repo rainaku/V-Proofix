@@ -121,14 +121,6 @@ namespace VProofix
 
             System.Media.SystemSounds.Beep.Play(); // Play sound to confirm hotkey caught
 
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                // Ensure window creates on UI thread
-                _indicatorWin = new IndicatorWindow();
-                _indicatorWin.ShowActivated = false; // Prevent focus stealing
-                _indicatorWin.Show();
-            });
-
             try
             {
                 // Wait briefly for the UI of the target app to catch up (e.g. if Ctrl+A was pressed right before hotkey)
@@ -140,37 +132,67 @@ namespace VProofix
                     textToFix = _uiAutoService.GetTextFromFocusedElement();
                 }
 
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    // Ensure window creates on UI thread
+                    _indicatorWin = new IndicatorWindow();
+                    _indicatorWin.ShowActivated = false; // Prevent focus stealing
+                    _indicatorWin.Show();
+                });
+
                 if (string.IsNullOrWhiteSpace(textToFix))
                 {
-                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Chưa bôi đen đoạn văn bản cần sửa"));
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Chưa bôi đen đoạn văn bản cần sửa", ""));
                     await Task.Delay(2000);
                     return;
                 }
 
-                var source = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-                string fixedText = await _geminiService.FixGrammarAsync(textToFix, source.Token);
-
-                _historyService.AddEntry(textToFix, fixedText);
-
-                if (forcePreview || _settingsService.CurrentSettings.ShowPreviewWindow)
+                int wordCount = textToFix.Split(new char[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+                if (wordCount > 600)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        var previewWin = new PreviewWindow(fixedText, _clipboardService);
-                        previewWin.Show();
-                    });
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Văn bản quá dài", $"Tối đa 600 từ (hiện tại: {wordCount})"));
+                    await Task.Delay(2500);
+                    return;
                 }
-                else
+
+                Action<string, string> progressCallback = (statusText, subText) => 
                 {
-                    // Always Auto-replace unless preview is requested
-                    await _clipboardService.ReplaceSelectedTextAsync(fixedText);
-                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Fixed!"));
-                    await Task.Delay(500);
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(statusText, subText));
+                };
+
+                var source = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                string fixedText;
+                
+                using (var inputBlocker = new InputBlocker())
+                {
+                    inputBlocker.Block();
+                    
+                    fixedText = await _geminiService.FixGrammarAsync(textToFix, progressCallback, source.Token);
+                    _historyService.AddEntry(textToFix, fixedText);
+
+                    if (forcePreview || _settingsService.CurrentSettings.ShowPreviewWindow)
+                    {
+                        inputBlocker.Unblock(); // Must explicitly unblock before showing an interactive window
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var previewWin = new PreviewWindow(fixedText, _clipboardService);
+                            previewWin.Show();
+                        });
+                    }
+                    else
+                    {
+                        // Always Auto-replace unless preview is requested
+                        // ReplaceSelectedTextAsync is injected, thus bypasses InputBlocker by design.
+                        await _clipboardService.ReplaceSelectedTextAsync(fixedText);
+                        inputBlocker.Unblock(); // Free inputs immediately after physical pasting
+                        Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Fixed!", "Đã xong"));
+                        await Task.Delay(500);
+                    }
                 }
             }
             catch (OperationCanceledException)
             {
-                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Kết nối bị quá hạn (Timeout)"));
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus("Kết nối bị quá hạn (Timeout)", ""));
                 await Task.Delay(2000);
             }
             catch (Exception ex)
@@ -193,7 +215,7 @@ namespace VProofix
                 else
                     errorMsg = $"Lỗi: {ex.Message.Split('\n')[0]}"; // Just first line to keep it clean
 
-                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(errorMsg));
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(errorMsg, ""));
                 await Task.Delay(2500);
             }
             finally

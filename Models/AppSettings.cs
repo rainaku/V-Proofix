@@ -1,9 +1,11 @@
+using System;
+
 namespace VProofix.Models
 {
     public class AppSettings
     {
         public string GeminiApiKey { get; set; } = string.Empty;
-        public string ModelName { get; set; } = "gemini-2.0-flash";
+        public string ModelName { get; set; } = "gemma-3-27b-it";
         public string TargetLanguage { get; set; } = "English";
         public string FixHotkey { get; set; } = "Ctrl+Alt+F";
         public string PreviewHotkey { get; set; } = "Ctrl+Alt+P";

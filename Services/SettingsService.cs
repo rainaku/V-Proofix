@@ -25,9 +25,13 @@ namespace VProofix.Services
                     string json = File.ReadAllText(SettingsPath);
                     CurrentSettings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                     
-                    if (CurrentSettings.ModelName == "gemini-1.5-flash")
+                    if (string.IsNullOrEmpty(CurrentSettings.ModelName) || 
+                        CurrentSettings.ModelName == "gemini-1.5-flash" || 
+                        CurrentSettings.ModelName == "gemini-2.5-flash" ||
+                        CurrentSettings.ModelName == "gemini-2.0-flash" || 
+                        CurrentSettings.ModelName == "gemma-3-27b")
                     {
-                        CurrentSettings.ModelName = "gemini-2.0-flash";
+                        CurrentSettings.ModelName = "gemma-3-27b-it";
                         SaveSettings();
                     }
                 }

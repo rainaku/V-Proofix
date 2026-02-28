@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using VProofix.Models;
 using VProofix.Services;
 
@@ -20,7 +21,18 @@ namespace VProofix.Views
         {
             var s = _settingsService.CurrentSettings;
             txtApiKey.Password = _settingsService.GetDecryptedApiKey();
-            txtModelName.Text = s.ModelName;
+            
+            // Tìm và chọn model phù hợp trong ComboBox
+            foreach (ComboBoxItem item in cmbModelName.Items)
+            {
+                if (item.Content.ToString() == s.ModelName)
+                {
+                    cmbModelName.SelectedItem = item;
+                    break;
+                }
+            }
+            if (cmbModelName.SelectedIndex == -1) cmbModelName.Text = s.ModelName; // Fallback if no match
+
             cmbTargetLanguage.Text = s.TargetLanguage;
             txtFixHotkey.Text = s.FixHotkey;
             txtPreviewHotkey.Text = s.PreviewHotkey;
@@ -32,7 +44,7 @@ namespace VProofix.Views
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             var s = _settingsService.CurrentSettings;
-            s.ModelName = txtModelName.Text;
+            s.ModelName = (cmbModelName.SelectedItem as ComboBoxItem)?.Content.ToString() ?? cmbModelName.Text;
             s.TargetLanguage = cmbTargetLanguage.Text;
             s.FixHotkey = txtFixHotkey.Text;
             s.PreviewHotkey = txtPreviewHotkey.Text;

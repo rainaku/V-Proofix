@@ -43,6 +43,12 @@ namespace VProofix.Views
         [DllImport("dwmapi.dll")]
         internal static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
 
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -52,35 +58,50 @@ namespace VProofix.Views
 
             try
             {
-                // Set corner preference for Win 11 handle - still good for the window frame itself if any
+                // Set corner preference for Win 11 handle
                 int cornerPreference = 2; // DWMWCP_ROUND
                 DwmSetWindowAttribute(handle, 33, ref cornerPreference, sizeof(int));
 
-                // We are not using SetWindowRgn or AccentPolicy anymore
-                // to allow WPF's DropShadowEffect to render naturally outside the border.
-                // The window is already AllowsTransparency=True and Background=Transparent.
+                // Add WS_EX_NOACTIVATE (0x08000000) and WS_EX_TOOLWINDOW (0x00000080)
+                const int GWL_EXSTYLE = -20;
+                const int WS_EX_NOACTIVATE = 0x08000000;
+                const int WS_EX_TOOLWINDOW = 0x00000080;
+                int extStyle = GetWindowLong(handle, GWL_EXSTYLE);
+                SetWindowLong(handle, GWL_EXSTYLE, extStyle | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
             }
             catch { /* Ignore if OS doesn't support */ }
         }
 
-        public void SetStatus(string text)
+        public void SetStatus(string text, string subText = "")
         {
             if (text == "Fixed!" || text == "Đã sửa xong!" || text == "Đã hoàn thành!")
             {
                 txtStatus.Text = "Đã hoàn thành!";
+                txtSubStatus.Text = subText;
+                txtSubStatus.Visibility = string.IsNullOrEmpty(subText) ? Visibility.Collapsed : Visibility.Visible;
                 var successAnim = (Storyboard)FindResource("SuccessAnimation");
                 successAnim.Begin();
             }
-            else if (text.StartsWith("Lỗi") || text.StartsWith("Chưa"))
+            else if (text.StartsWith("Lỗi") || text.StartsWith("Chưa") || text.StartsWith("Văn bản"))
             {
                 txtStatus.Text = text;
+                txtSubStatus.Text = subText;
+                txtSubStatus.Visibility = string.IsNullOrEmpty(subText) ? Visibility.Collapsed : Visibility.Visible;
                 var errorAnim = (Storyboard)FindResource("ErrorAnimation");
                 errorAnim.Begin();
             }
             else
             {
                 txtStatus.Text = text;
+                txtSubStatus.Text = subText;
+                txtSubStatus.Visibility = string.IsNullOrEmpty(subText) ? Visibility.Collapsed : Visibility.Visible;
             }
+        }
+
+        public void SetSubStatus(string text)
+        {
+            txtSubStatus.Text = text;
+            txtSubStatus.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public async Task CloseAnimatedAsync()
