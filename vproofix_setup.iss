@@ -4,11 +4,13 @@
 [Setup]
 AppId={{D9B2A3F4-E1F0-4E5B-9DED-76EDDBDF33F9}
 AppName=V-Proofix
-AppVersion=1.1 Stable release
+AppVersion=1.1.0
 AppPublisher=rainaku
 DefaultDirName={autopf}\V-Proofix
 DefaultGroupName=V-Proofix
 AllowNoIcons=yes
+DisableDirPage=no
+UsePreviousAppDir=no
 ; Optimize installer size
 Compression=lzma2/ultra64
 InternalCompressLevel=ultra
@@ -17,7 +19,7 @@ WizardStyle=modern
 SetupIconFile=d:\CodeShii\V-Proofix\Resources\logo.ico
 UninstallDisplayIcon={app}\VProofix.exe
 OutputDir=setup
-OutputBaseFilename=VProofix_Setup_v1.0
+OutputBaseFilename=VProofix_Setup_v1.1.0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
