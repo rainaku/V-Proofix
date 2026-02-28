@@ -10,7 +10,8 @@ V-Proofix is a professional Windows desktop application designed to streamline y
 
 ## Key Features
 
-*   **Multilingual AI Proofreading:** Powered by Google Gemini (optimized for **Gemini 2.0 Flash**) to analyze context and deliver lightning-fast, precise linguistic improvements.
+*   **Multilingual AI Proofreading:** Powered by Google Gemini (optimized for **Gemma 3 27B** and **Gemini 2.5 Flash**) to analyze context and deliver lightning-fast, precise linguistic improvements.
+*   **Generous Free Tier:** Process texts endlessly with a massive capacity of **up to 14.4K requests/day** for free via Google AI Studio.
 *   **Seamless System Integration:** Operates via system-wide hotkeys, allowing you to process text in any application (Word, Browser, IDE, Slack, etc.) without manual copy-pasting.
 *   **Liquid Glass Interface:** A modern UI featuring high-end Glassmorphism effects, ensuring a premium aesthetic that blends beautifully with your workspace.
 *   **Smart Preview System:** Provides an intuitive side-by-side comparison (Diff) between original and corrected text before applying changes.
