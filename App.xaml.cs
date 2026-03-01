@@ -26,6 +26,7 @@ namespace VProofix
         private UIAutomationService _uiAutoService = null!;
         private GeminiService _geminiService = null!;
         private HistoryService _historyService = null!;
+        private DoubleShiftService _doubleShiftService = null!;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -49,9 +50,14 @@ namespace VProofix
             _geminiService = new GeminiService(_settingsService);
             _historyService = new HistoryService(_settingsService);
             _hotkeyService = new HotkeyService();
+            _doubleShiftService = new DoubleShiftService();
 
             // Initialize Hotkey Service Window Loop
             _hotkeyService.Initialize();
+            
+            // Initialize Double Shift global hook
+            _doubleShiftService.Initialize();
+            _doubleShiftService.OnDoubleShift += OnDoubleShiftDetected;
 
             // Register Hotkeys
             RegisterHotkeys();
@@ -111,6 +117,85 @@ namespace VProofix
         public void ReloadHotkeys()
         {
             RegisterHotkeys();
+        }
+
+        private async void OnDoubleShiftDetected()
+        {
+            if (_isProcessing) return;
+            _isProcessing = true;
+
+            try
+            {
+                await Task.Delay(50);
+
+                string textToFix = await _clipboardService.GetSelectedTextAsync();
+                if (string.IsNullOrWhiteSpace(textToFix))
+                {
+                    textToFix = _uiAutoService.GetTextFromFocusedElement();
+                }
+
+                if (string.IsNullOrWhiteSpace(textToFix)) 
+                {
+                    _isProcessing = false;
+                    return;
+                }
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    CaseMenuWindow? menu = null;
+                    menu = new CaseMenuWindow(async (option) =>
+                    {
+                        try
+                        {
+                            if (menu != null)
+                            {
+                                menu = null;
+                            }
+                            await Task.Delay(100); // Important: Give OS time to restore focus to original app
+
+                            string newText = textToFix;
+                            if (option == "UPPER")
+                                newText = textToFix.ToUpper();
+                            else if (option == "LOWER")
+                                newText = textToFix.ToLower();
+                            else if (option == "CAPITAL")
+                            {
+                                if (textToFix.Length > 0)
+                                    newText = char.ToUpper(textToFix[0]) + textToFix.Substring(1).ToLower();
+                            }
+                            else if (option == "SENTENCE")
+                            {
+                                if (textToFix.Length > 0)
+                                {
+                                    string lower = textToFix.ToLower();
+                                    newText = System.Text.RegularExpressions.Regex.Replace(lower, @"(^[\s]*[a-z])|([.!?]\s+[a-z])", m => m.Value.ToUpper(), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                }
+                            }
+
+                            if (newText != textToFix)
+                            {
+                                await _clipboardService.ReplaceSelectedTextAsync(newText);
+                            }
+                        }
+                        finally
+                        {
+                            _isProcessing = false;
+                        }
+                    });
+                    
+                    menu.Closed += (s, e) => 
+                    {
+                        // Fallback reset if window is closed without selection (e.g Esc or Deactivated)
+                        _isProcessing = false; 
+                    };
+                    
+                    menu.Show();
+                });
+            }
+            catch
+            {
+                _isProcessing = false;
+            }
         }
 
         private bool _isProcessing = false;
@@ -284,6 +369,7 @@ namespace VProofix
                 _trayIcon.Dispose();
             }
             _hotkeyService?.Dispose();
+            _doubleShiftService?.Dispose();
             _mutex?.ReleaseMutex();
             _mutex?.Dispose();
             Application.Current.Shutdown();
