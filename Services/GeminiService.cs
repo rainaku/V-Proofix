@@ -88,16 +88,18 @@ namespace VProofix.Services
                 string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
                 int retriesPerModel = (model == settings.ModelName) ? 2 : 1; 
 
-                try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Trying model: {model}...\n"); } catch { }
+                _ = Task.Run(() => { try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Trying model: {model}...\n"); } catch { } });
 
                 for (int i = 0; i < retriesPerModel; i++)
                 {
                     try
                     {
-                        progress?.Invoke(L.Working, L.CallingApi(GetModelDisplayName(model)));
-
                         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+                        var request = new HttpRequestMessage(HttpMethod.Post, url) 
+                        { 
+                            Content = content,
+                            Version = new Version(2, 0)
+                        };
                         
                         int totalChars = originalText.Length;
                         progress?.Invoke(L.Working, L.Fixing(totalChars));
@@ -106,30 +108,29 @@ namespace VProofix.Services
 
                         if (response.IsSuccessStatusCode)
                         {
-                            try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Success with: {model}\n"); } catch { }
+                            _ = Task.Run(() => { try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Success with: {model}\n"); } catch { } });
                             
-                            string responseString = await response.Content.ReadAsStringAsync(cancellationToken);
-
-                            using (JsonDocument doc = JsonDocument.Parse(responseString))
+                            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                            using JsonDocument doc = await JsonDocument.ParseAsync(stream, default, cancellationToken);
+                            
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("candidates", out JsonElement candidates) && candidates.GetArrayLength() > 0)
                             {
-                                var root = doc.RootElement;
-                                if (root.TryGetProperty("candidates", out JsonElement candidates) && candidates.GetArrayLength() > 0)
+                                var parts = candidates[0].GetProperty("content").GetProperty("parts");
+                                if (parts.GetArrayLength() > 0)
                                 {
-                                    var parts = candidates[0].GetProperty("content").GetProperty("parts");
-                                    if (parts.GetArrayLength() > 0)
-                                    {
-                                        string? fixedText = parts[0].GetProperty("text").GetString();
-                                        return fixedText?.Trim() ?? throw new Exception("API returned null text.");
-                                    }
+                                    string? fixedText = parts[0].GetProperty("text").GetString();
+                                    return fixedText?.Trim() ?? throw new Exception("API returned null text.");
                                 }
                             }
+                            
                             throw new Exception("Unexpected API response format.");
                         }
 
                         string errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                         lastError = $"Model '{model}' failed ({response.StatusCode}): {errorContent}";
                         
-                        try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Failed: {lastError}\n"); } catch { }
+                        _ = Task.Run(() => { try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Failed: {lastError}\n"); } catch { } });
 
                         // If it's a 4xx error (except 429), usually means the model doesn't exist or is not available.
                         // Skip retries and move to next model.
@@ -142,7 +143,7 @@ namespace VProofix.Services
                     catch (Exception ex)
                     {
                         lastError = ex.Message;
-                        try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Exception: {lastError}\n"); } catch { }
+                        _ = Task.Run(() => { try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Exception: {lastError}\n"); } catch { } });
                     }
 
                     if (i < retriesPerModel - 1)
