@@ -99,33 +99,16 @@ namespace VProofix.Services
                         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                         var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
                         
-                        var responseTask = _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-                        // Only show 'calling API' for exactly 1 second
-                        await Task.Delay(1000, cancellationToken);
-                        
                         int totalChars = originalText.Length;
-                        progress?.Invoke(L.Working, L.Analyzing(totalChars));
-                        await Task.Delay(2000, cancellationToken);
-
                         progress?.Invoke(L.Working, L.Fixing(totalChars));
 
-                        var response = await responseTask;
+                        var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                         if (response.IsSuccessStatusCode)
                         {
                             try { File.AppendAllText(logPath, $"[{DateTime.Now:T}] Success with: {model}\n"); } catch { }
                             
                             string responseString = await response.Content.ReadAsStringAsync(cancellationToken);
-                            
-                            // Simulate processing time UX for the user
-                            int steps = 20;
-                            for (int step = 1; step <= steps; step++)
-                            {
-                                int percent = (int)((double)step / steps * 100);
-                                progress?.Invoke(L.Working, L.FixingPercent(totalChars, percent));
-                                await Task.Delay(15, cancellationToken);
-                            }
 
                             using (JsonDocument doc = JsonDocument.Parse(responseString))
                             {

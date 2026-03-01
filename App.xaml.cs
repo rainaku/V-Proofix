@@ -273,7 +273,7 @@ namespace VProofix
                         await _clipboardService.ReplaceSelectedTextAsync(fixedText);
                         inputBlocker.Unblock(); // Free inputs immediately after physical pasting
                         Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.Fixed, L.Done));
-                        await Task.Delay(500);
+                        await Task.Delay(300);
                     }
                 }
             }
