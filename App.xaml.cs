@@ -112,6 +112,13 @@ namespace VProofix
                     ShowTrayNotification("Hotkey Error", $"Failed to register Preview Hotkey: {settings.PreviewHotkey}", System.Windows.Forms.ToolTipIcon.Warning);
                 }
             }
+            
+            // Register Summary Hotkey
+            bool summaryRegistered = _hotkeyService.Register("Ctrl+Alt+S", async () => await ExecuteSummaryAsync());
+            if (!summaryRegistered)
+            {
+                ShowTrayNotification("Hotkey Error", $"Failed to register Summary Hotkey: Ctrl+Alt+S", System.Windows.Forms.ToolTipIcon.Warning);
+            }
         }
 
         public void ReloadHotkeys()
@@ -203,14 +210,13 @@ namespace VProofix
 
         private async Task ExecuteFixAsync(bool forcePreview)
         {
-            if (_isProcessing) return; // simple debounce
+            if (_isProcessing) return; 
             _isProcessing = true;
 
-            System.Media.SystemSounds.Beep.Play(); // Play sound to confirm hotkey caught
+            System.Media.SystemSounds.Beep.Play(); 
 
             try
             {
-                // Wait briefly for the UI of the target app to catch up (e.g. if Ctrl+A was pressed right before hotkey)
                 await Task.Delay(50);
 
                 string textToFix = await _clipboardService.GetSelectedTextAsync();
@@ -221,9 +227,8 @@ namespace VProofix
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    // Ensure window creates on UI thread
                     _indicatorWin = new IndicatorWindow();
-                    _indicatorWin.ShowActivated = false; // Prevent focus stealing
+                    _indicatorWin.ShowActivated = false; 
                     _indicatorWin.Show();
                 });
 
@@ -231,6 +236,7 @@ namespace VProofix
                 {
                     Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.NoTextSelected, ""));
                     await Task.Delay(2000);
+                    _clipboardService.RestoreOriginalClipboard();
                     return;
                 }
 
@@ -239,6 +245,7 @@ namespace VProofix
                 {
                     Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.TextTooLong, L.MaxWords(wordCount)));
                     await Task.Delay(2500);
+                    _clipboardService.RestoreOriginalClipboard();
                     return;
                 }
 
@@ -247,7 +254,7 @@ namespace VProofix
                     Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(statusText, subText));
                 };
 
-                var source = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                var source = new CancellationTokenSource(TimeSpan.FromSeconds(20)); // Increased slightly
                 string fixedText;
                 
                 using (var inputBlocker = new InputBlocker())
@@ -259,7 +266,7 @@ namespace VProofix
 
                     if (forcePreview || _settingsService.CurrentSettings.ShowPreviewWindow)
                     {
-                        inputBlocker.Unblock(); // Must explicitly unblock before showing an interactive window
+                        inputBlocker.Unblock(); 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             var previewWin = new PreviewWindow(fixedText, _clipboardService);
@@ -268,13 +275,113 @@ namespace VProofix
                     }
                     else
                     {
-                        // Always Auto-replace unless preview is requested
-                        // ReplaceSelectedTextAsync is injected, thus bypasses InputBlocker by design.
                         await _clipboardService.ReplaceSelectedTextAsync(fixedText);
-                        inputBlocker.Unblock(); // Free inputs immediately after physical pasting
+                        inputBlocker.Unblock(); 
                         Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.Fixed, L.Done));
                         await Task.Delay(300);
                     }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.Timeout, ""));
+                await Task.Delay(2000);
+                _clipboardService.RestoreOriginalClipboard();
+            }
+            catch (Exception ex)
+            {
+                string errorMsg = L.SysError;
+                
+                if (ex is GeminiException gex)
+                {
+                    if (gex.StatusCode == 401) errorMsg = L.ErrInvalidKey;
+                    else if (gex.StatusCode == 429) errorMsg = L.ErrRateLimit;
+                    else if (gex.StatusCode == 403) errorMsg = "API Error 403 / Access Denied";
+                    else if (gex.StatusCode >= 500) errorMsg = "Provider Error / Lỗi hệ thống AI";
+                    else errorMsg = $"AI Error: {gex.Message.Split('\n')[0]}";
+                }
+                else if (ex.Message.ToLower().Contains("api key is missing"))
+                    errorMsg = L.ErrMissingKey;
+                else if (ex is HttpRequestException)
+                    errorMsg = "Connection Error / Lỗi kết nối máy chủ";
+                else
+                    errorMsg = $"Error: {ex.Message.Split('\n')[0]}";
+
+                Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(errorMsg, ""));
+                await Task.Delay(2500);
+                
+                _clipboardService.RestoreOriginalClipboard();
+            }
+            finally
+            {
+                if (_indicatorWin != null)
+                {
+                    await Application.Current.Dispatcher.InvokeAsync(async () =>
+                    {
+                        if (_indicatorWin != null)
+                        {
+                            await _indicatorWin.CloseAnimatedAsync();
+                            _indicatorWin = null;
+                        }
+                    });
+                }
+                _isProcessing = false;
+            }
+        }
+
+        private async Task ExecuteSummaryAsync()
+        {
+            if (_isProcessing) return; 
+            _isProcessing = true;
+
+            System.Media.SystemSounds.Beep.Play(); 
+
+            try
+            {
+                await Task.Delay(50);
+
+                string textToFix = await _clipboardService.GetSelectedTextAsync();
+                if (string.IsNullOrWhiteSpace(textToFix))
+                {
+                    textToFix = _uiAutoService.GetTextFromFocusedElement();
+                }
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    _indicatorWin = new IndicatorWindow();
+                    _indicatorWin.ShowActivated = false; 
+                    _indicatorWin.Show();
+                });
+
+                if (string.IsNullOrWhiteSpace(textToFix))
+                {
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(L.NoTextSelected, ""));
+                    await Task.Delay(2000);
+                    _clipboardService.RestoreOriginalClipboard();
+                    return;
+                }
+
+                Action<string, string> progressCallback = (statusText, subText) => 
+                {
+                    Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(statusText, subText));
+                };
+
+                var source = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                string summaryText;
+                
+                using (var inputBlocker = new InputBlocker())
+                {
+                    inputBlocker.Block();
+                    
+                    summaryText = await _geminiService.SummarizeTextAsync(textToFix, progressCallback, source.Token);
+
+                    inputBlocker.Unblock(); 
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        var summaryWin = new SummaryWindow(summaryText);
+                        summaryWin.Show();
+                    });
                 }
             }
             catch (OperationCanceledException)
@@ -286,21 +393,20 @@ namespace VProofix
             {
                 string errorMsg = L.SysError;
                 
-                string lowerMsg = ex.Message.ToLower();
-                if (lowerMsg.Contains("api key is missing"))
+                if (ex is GeminiException gex)
+                {
+                    if (gex.StatusCode == 401) errorMsg = L.ErrInvalidKey;
+                    else if (gex.StatusCode == 429) errorMsg = L.ErrRateLimit;
+                    else if (gex.StatusCode == 403) errorMsg = "API Error 403 / Access Denied";
+                    else if (gex.StatusCode >= 500) errorMsg = "Provider Error / Lỗi hệ thống AI";
+                    else errorMsg = $"AI Error: {gex.Message.Split('\n')[0]}";
+                }
+                else if (ex.Message.ToLower().Contains("api key is missing"))
                     errorMsg = L.ErrMissingKey;
-                else if (lowerMsg.Contains("401") || lowerMsg.Contains("unauthorized"))
-                    errorMsg = L.ErrInvalidKey;
-                else if (lowerMsg.Contains("429") || lowerMsg.Contains("too many requests"))
-                    errorMsg = L.ErrRateLimit;
-                else if (lowerMsg.Contains("403"))
-                    errorMsg = "Error 403 / Truy cập bị từ chối";
-                else if (lowerMsg.Contains("network") || lowerMsg.Contains("dns") || lowerMsg.Contains("socket"))
-                    errorMsg = "Network Error / Không có kết nối mạng";
                 else if (ex is HttpRequestException)
                     errorMsg = "Connection Error / Lỗi kết nối máy chủ";
                 else
-                    errorMsg = $"Error: {ex.Message.Split('\n')[0]}"; // Just first line to keep it clean
+                    errorMsg = $"Error: {ex.Message.Split('\n')[0]}";
 
                 Application.Current.Dispatcher.Invoke(() => _indicatorWin?.SetStatus(errorMsg, ""));
                 await Task.Delay(2500);
@@ -318,6 +424,7 @@ namespace VProofix
                         }
                     });
                 }
+                _clipboardService.RestoreOriginalClipboard();
                 _isProcessing = false;
             }
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -8,39 +9,86 @@ namespace VProofix.Services
 {
     public class ClipboardService
     {
+        [StructLayout(LayoutKind.Sequential)]
+        struct INPUT
+        {
+            public uint type;
+            public InputUnion u;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct InputUnion
+        {
+            [FieldOffset(0)] public MOUSEINPUT mi;
+            [FieldOffset(0)] public KEYBDINPUT ki;
+            [FieldOffset(0)] public HARDWAREINPUT hi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct HARDWAREINPUT
+        {
+            public uint uMsg;
+            public ushort wParamL;
+            public ushort wParamH;
+        }
+
         [DllImport("user32.dll", SetLastError = true)]
-        static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
         [DllImport("user32.dll")]
         static extern short GetAsyncKeyState(int vKey);
 
-        const int KEYEVENTF_KEYUP = 0x0002;
-        const int VK_CONTROL = 0x11;
-        const int VK_C = 0x43;
-        const int VK_V = 0x56;
+        const uint INPUT_KEYBOARD = 1;
+        const uint KEYEVENTF_KEYUP = 0x0002;
+        const ushort VK_CONTROL = 0x11;
+        const ushort VK_C = 0x43;
+        const ushort VK_V = 0x56;
+
+        private IDataObject? _originalData;
 
         public async Task<string> GetSelectedTextAsync()
         {
-            string originalText = string.Empty;
+            string grabbedText = string.Empty;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
-                    // Empty clipboard
+                    // Backup original clipboard before we hijack it
+                    _originalData = Clipboard.GetDataObject();
                     Clipboard.Clear();
                 }
-                catch { } // ignore lock exceptions for now
+                catch { } 
             });
 
-            // Wait for user to physically release modifiers before injecting Ctrl+C
             await WaitForModifiersReleaseAsync();
 
-            // Need to release keys & simulate Ctrl+C without blocking UI thread
+            // Background insert
             SimulateCtrlC();
 
-            // Poll every 10ms for up to 300ms (30 tries)
-            for (int i = 0; i < 30; i++)
+            // Wait up to 500ms for text to arrive
+            for (int i = 0; i < 50; i++)
             {
                 bool hasText = false;
                 Application.Current.Dispatcher.Invoke(() =>
@@ -49,8 +97,8 @@ namespace VProofix.Services
                     {
                         if (Clipboard.ContainsText())
                         {
-                            originalText = Clipboard.GetText();
-                            if (!string.IsNullOrEmpty(originalText))
+                            grabbedText = Clipboard.GetText();
+                            if (!string.IsNullOrEmpty(grabbedText))
                                 hasText = true;
                         }
                     }
@@ -61,7 +109,7 @@ namespace VProofix.Services
                 await Task.Delay(10);
             }
 
-            return originalText;
+            return grabbedText;
         }
 
         public async Task ReplaceSelectedTextAsync(string newText)
@@ -75,44 +123,93 @@ namespace VProofix.Services
                 catch { }
             });
 
-            await Task.Delay(10); // allow tiny delay for clipboard to settle
+            await Task.Delay(20); 
 
-            // Wait for user to release keys before pasting
             await WaitForModifiersReleaseAsync();
 
-            // Background insert
             SimulateCtrlV();
+            
+            // Allow some time for the OS to process the paste before we (optionally) restore the clipboard
+            await Task.Delay(100);
+            
+            RestoreOriginalClipboard();
+        }
+
+        public void RestoreOriginalClipboard()
+        {
+            if (_originalData == null) return;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    Clipboard.SetDataObject(_originalData, true);
+                    _originalData = null; // Clear so we don't restore twice
+                }
+                catch { }
+            });
         }
 
         private void SimulateCtrlC()
         {
-            keybd_event(0x12, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release Alt
-            keybd_event(0x10, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release Shift
-            keybd_event(0x5B, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release LWin
-            keybd_event(0x5C, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release RWin
-
-            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
-            keybd_event(VK_C, 0, 0, UIntPtr.Zero);
-            keybd_event(VK_C, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            SendInputs(new ushort[] { 0x12, 0x10, 0x5B, 0x5C }, true); // Release Alt, Shift, LWin, RWin
+            
+            var inputs = new INPUT[]
+            {
+                CreateKeyInput(VK_CONTROL, 0),
+                CreateKeyInput(VK_C, 0),
+                CreateKeyInput(VK_C, KEYEVENTF_KEYUP),
+                CreateKeyInput(VK_CONTROL, KEYEVENTF_KEYUP)
+            };
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
         }
 
         private void SimulateCtrlV()
         {
-            keybd_event(0x12, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release Alt
-            keybd_event(0x10, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release Shift
-            keybd_event(0x5B, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release LWin
-            keybd_event(0x5C, 0, KEYEVENTF_KEYUP, UIntPtr.Zero); // Release RWin
+            SendInputs(new ushort[] { 0x12, 0x10, 0x5B, 0x5C }, true); // Release modifiers
+            
+            var inputs = new INPUT[]
+            {
+                CreateKeyInput(VK_CONTROL, 0),
+                CreateKeyInput(VK_V, 0),
+                CreateKeyInput(VK_V, KEYEVENTF_KEYUP),
+                CreateKeyInput(VK_CONTROL, KEYEVENTF_KEYUP)
+            };
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
 
-            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
-            keybd_event(VK_V, 0, 0, UIntPtr.Zero);
-            keybd_event(VK_V, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        private void SendInputs(ushort[] keys, bool isKeyUp)
+        {
+            var inputs = new INPUT[keys.Length];
+            for (int i = 0; i < keys.Length; i++)
+            {
+                inputs[i] = CreateKeyInput(keys[i], isKeyUp ? KEYEVENTF_KEYUP : 0);
+            }
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+
+        private INPUT CreateKeyInput(ushort wVk, uint dwFlags)
+        {
+            return new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = wVk,
+                        wScan = 0,
+                        dwFlags = dwFlags,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
         }
 
         private async Task WaitForModifiersReleaseAsync()
         {
-            int maxWaitMs = 2000; // wait max 2s
+            int maxWaitMs = 1500;
             int waited = 0;
             while (waited < maxWaitMs)
             {
@@ -123,9 +220,8 @@ namespace VProofix.Services
                               (GetAsyncKeyState(0x5C) & 0x8000) != 0;   // RWin
                 
                 if (!isDown) break;
-
-                await Task.Delay(5);
-                waited += 5;
+                await Task.Delay(10);
+                waited += 10;
             }
         }
     }

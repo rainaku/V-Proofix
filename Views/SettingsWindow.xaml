@@ -64,6 +64,7 @@
 
         <TextBlock x:Name="lblTargetLanguage" Text="Target Language:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
         <ComboBox x:Name="cmbTargetLanguage" Grid.Row="3" Grid.Column="1" Margin="0,5" Padding="5">
+            <ComboBoxItem Content="Auto"/>
             <ComboBoxItem Content="English"/>
             <ComboBoxItem Content="Vietnamese"/>
         </ComboBox>

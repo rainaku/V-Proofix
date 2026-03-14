@@ -4,7 +4,7 @@
 [Setup]
 AppId={{D9B2A3F4-E1F0-4E5B-9DED-76EDDBDF33F9}
 AppName=V-Proofix
-AppVersion=1.1.0
+AppVersion=1.1.1
 AppPublisher=rainaku
 DefaultDirName={autopf}\V-Proofix
 DefaultGroupName=V-Proofix

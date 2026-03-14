@@ -71,3 +71,4 @@ appsettings.json
 run_log.txt
 startup_error.txt
 tasks/todo.md
+/setup
